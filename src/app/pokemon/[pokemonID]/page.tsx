@@ -1,10 +1,10 @@
 import Image from "next/image";
 
-import formatIdToThreeDigits from "@/utils/formatId";
 import Tabs from "@/components/Tabs";
 import { colors } from "@/constants/colors";
 import Attribute from "@/components/Attribute";
 import ProgressBar from "@/components/ProgressBar";
+import formatIdToThreeDigits from "@/utils/formatId";
 
 type Props = {
   params: Promise<{
@@ -16,7 +16,7 @@ const PokemonDetails = async ({ params }: Props) => {
   const pokemonID = (await params).pokemonID;
 
   return (
-    <div className={`flex flex-col w-lg min-h-screen overflow-hidden ${colors["green"]}`}>
+    <div className={`flex flex-col w-full min-h-screen overflow-hidden ${colors["green"]}`}>
       <div>
         <div className="flex justify-between p-8 items-center">
           <div>
@@ -39,8 +39,7 @@ const PokemonDetails = async ({ params }: Props) => {
         <Image src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/${pokemonID}.svg`} height="200" width="200" alt="img" />
       </div>
 
-
-      <div className="bg-white rounded-t-4xl h-screen flex-1 text-black -mt-8 pt-14 z-10">
+      <div className="bg-white rounded-t-4xl h-screen flex-1 text-black -mt-8 pt-14 z-10 sm:text-lg text-sm">
         <Tabs
           items={[
             {

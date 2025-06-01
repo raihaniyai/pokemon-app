@@ -6,7 +6,7 @@ interface Props {
 }
 
 const ProgressBar = ({ progress, showNumber }: Props) => {
-  const progressColor = progress < 50 ? 'bg-red-500' : 'bg-green-500';
+  const progressColor = progress < 50 ? 'bg-red-400' : 'bg-emerald-400';
 
   return (
     <div className='flex items-center space-x-6 h-full'>

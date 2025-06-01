@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import formatIdToThreeDigits from "@/utils/formatId";
+import toUpperCase from "@/utils/toUpperCase";
 import { colors } from "@/constants/colors";
 
 type Props = {
@@ -26,7 +27,9 @@ const PokemonCard = ({ id, name, color, types, image }: Props) => {
         <div className="flex justify-between">
           <div>
             {types.map((type, index) => (
-              <div key={index} className="bg-gray-100/20 rounded-full sm:px-4 px-3 py-1 mb-2 text-xs w-fit">{type}</div>
+              <div key={index} className="bg-gray-100/20 rounded-full sm:px-4 px-3 py-1 mb-2 text-xs w-fit">
+                {toUpperCase(type)}
+              </div>
             ))}
           </div>
 
