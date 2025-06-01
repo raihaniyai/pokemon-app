@@ -5,6 +5,8 @@ import { colors } from "@/constants/colors";
 import Attribute from "@/components/Attribute";
 import ProgressBar from "@/components/ProgressBar";
 import formatIdToThreeDigits from "@/utils/formatId";
+import toUpperCase from "@/utils/toUpperCase";
+import { convertDecimetersToFootFormat, convertDecimetersToMeters, convertHectogramsToKilograms, convertHectogramsToPounds } from "@/utils/unitConverter";
 
 type Props = {
   params: Promise<{
@@ -15,15 +17,38 @@ type Props = {
 const PokemonDetails = async ({ params }: Props) => {
   const pokemonID = (await params).pokemonID;
 
+  const [pokemonRes, speciesRes, evolutionRes] = await Promise.all([
+    fetch(`https://pokeapi.co/api/v2/pokemon/${pokemonID}`),
+    fetch(`https://pokeapi.co/api/v2/pokemon-species/${pokemonID}`),
+    fetch(`https://pokeapi.co/api/v2/evolution-chain/${pokemonID}`),
+  ]);
+
+  if (!pokemonRes.ok || !speciesRes.ok) {
+    throw new Error("Failed to fetch pokemon data");
+  }
+
+  const pokemonData = await pokemonRes.json();
+  const speciesData = await speciesRes.json();
+  const evolutionData = await evolutionRes.json();
+
+  const parseEvolutionChain = (chain: EvolutionLink): { url: string; name: string; evolvesTo: any[] } => ({
+    url: chain.species.url,
+    name: chain.species.name,
+    evolvesTo: chain.evolves_to.map(parseEvolutionChain),
+  });
+
+  const evolution = parseEvolutionChain(evolutionData.chain);
+
   return (
-    <div className={`flex flex-col w-full min-h-screen overflow-hidden ${colors["green"]}`}>
+    <div className={`flex flex-col w-full h-screen overflow-hidden ${colors[speciesData.color.name]}`}>
       <div>
         <div className="flex justify-between p-8 items-center">
           <div>
-            <div className="text-4xl font-bold mb-2">Bulbasaur</div>
+            <div className="text-4xl font-bold mb-2">{toUpperCase(pokemonData.name)}</div>
             <div className="flex space-x-2 font-bold">
-              <div className="bg-gray-100/30 rounded-full px-4 py-1 mb-2 text-xs">Grass</div>
-              <div className="bg-gray-100/30 rounded-full px-4 py-1 mb-2 text-xs">Poison</div>
+              {pokemonData.types.map((t: any) => (
+                <div key={t.type.name} className="bg-gray-100/30 rounded-full px-4 py-1 mb-2 text-xs">{toUpperCase(t.type.name)}</div>
+              ))}
             </div>
           </div>
 
@@ -36,7 +61,7 @@ const PokemonDetails = async ({ params }: Props) => {
       </div>
 
       <div className="flex justify-center z-20">
-        <Image src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/${pokemonID}.svg`} height="200" width="200" alt="img" />
+        <Image src={pokemonData.sprites.other.dream_world.front_default || pokemonData.sprites.front_default} height="200" width="200" alt="img" />
       </div>
 
       <div className="bg-white rounded-t-4xl h-screen flex-1 text-black -mt-8 pt-14 z-10 sm:text-lg text-sm">
@@ -46,28 +71,34 @@ const PokemonDetails = async ({ params }: Props) => {
               key: "About",
               label: "About",
               children: (
-                <About />
+                <About
+                  species={speciesData.genera.find((g: any) => g.language.name === "en")?.genus || ""}
+                  height={pokemonData.height}
+                  weight={pokemonData.weight}
+                  abilities={pokemonData.abilities.map((a: any) => toUpperCase(a.ability.name)).join(", ")}
+                />
               )
             },
             {
               key: "Base Stats",
               label: "Base Stats",
               children: (
-                <BaseStats />
+                <BaseStats stats={pokemonData.stats} />
               )
             },
             {
               key: "Evolution",
               label: "Evolution",
-              children: (
-                <div>Evolution</div>
-              )
+              children: <Evolution chain={evolution} />,
             },
             {
               key: "Moves",
               label: "Moves",
               children: (
-                <div>Moves</div>
+                <Moves moves={pokemonData.moves.map((m: any) => ({
+                  name: m.move.name,
+                  method: m.version_group_details[0]?.move_learn_method.name || "unknown",
+                }))} />
               )
             }
           ]}
@@ -77,28 +108,125 @@ const PokemonDetails = async ({ params }: Props) => {
   );
 }
 
-const About = () => {
+type AboutProps = {
+  species: string;
+  height: number;
+  weight: number;
+  abilities: string[];
+}
+
+const About = ({ species, height, weight, abilities }: AboutProps) => {
   return (
     <div className="space-y-4">
-      <Attribute label="Species" value="Seed" />
-      <Attribute label="Height" value="2'3.6 (0.70 cm)" />
-      <Attribute label="Weight" value="15.2 lbs (6.9kg)" />
-      <Attribute label="Abilities" value="Overgrow, Clorophyl" />
+      <Attribute label="Species" value={species} />
+      <Attribute label="Height" value={`${convertDecimetersToFootFormat(height)} (${convertDecimetersToMeters(height)} m)`} />
+      <Attribute label="Weight" value={`${convertHectogramsToPounds(weight)} lbs (${convertHectogramsToKilograms(weight)} kg)`} />
+      <Attribute label="Abilities" value={abilities} />
     </div>
   )
 }
 
-const BaseStats = () => {
+type Stat = {
+  base_stat: number;
+  stat: { name: string };
+};
+
+type BaseStatsProps = {
+  stats: Stat[];
+};
+
+const BaseStats = ({ stats }: BaseStatsProps) => {
+  const getLabel = (name: string) => {
+    switch (name) {
+      case "hp":
+        return "HP";
+      case "attack":
+        return "Attack";
+      case "defense":
+        return "Defense";
+      case "special-attack":
+        return "Sp. Atk";
+      case "special-defense":
+        return "Sp. Def";
+      case "speed":
+        return "Speed";
+      default:
+        return name;
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <Attribute label="HP" value={<ProgressBar progress={45} showNumber />} />
-      <Attribute label="Attack" value={<ProgressBar progress={60} showNumber />} />
-      <Attribute label="Defense" value={<ProgressBar progress={48} showNumber />} />
-      <Attribute label="Sp. Atk" value={<ProgressBar progress={65} showNumber />} />
-      <Attribute label="Sp. Def" value={<ProgressBar progress={65} showNumber />} />
-      <Attribute label="Speed" value={<ProgressBar progress={45} showNumber />} />
+      {stats.map(({ base_stat, stat }) => (
+        <Attribute
+          key={stat.name}
+          label={getLabel(stat.name)}
+          value={<ProgressBar progress={base_stat} showNumber />}
+        />
+      ))}
     </div>
-  )
-}
+  );
+};
+
+type EvolutionLink = {
+  species: { id: number; name: string; url: string };
+  evolves_to: EvolutionLink[];
+};
+
+type EvolutionProps = {
+  chain: {
+    url: string;
+    name: string;
+    evolvesTo: EvolutionProps["chain"][];
+  };
+};
+
+const Evolution = ({ chain }: EvolutionProps) => {
+  const match = chain.url.match(/\/pokemon-species\/(\d+)\//);
+  const id = match ? match[1] : "";
+
+  return (
+    <div className="flex flex-col space-y-4">
+      <EvolutionItem name={chain.name} id={id} />
+      {chain.evolvesTo.length > 0 && (
+        <div className="ml-8 border-l-2 border-gray-300 pl-4">
+          {chain.evolvesTo.map((evo) => (
+            <Evolution key={evo.name} chain={evo} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const EvolutionItem = ({ name, id }: { name: string, id: string }) => {
+  const imgUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/${id}.svg`;
+  return (
+    <div className="flex items-center space-x-4">
+      <Image src={imgUrl} width={64} height={64} alt={name} />
+      <div className="capitalize">{name}</div>
+    </div>
+  );
+};
+
+type MovesProps = {
+  moves: { name: string; method: string }[];
+};
+
+const Moves = ({ moves }: MovesProps) => {
+  return (
+    <div className="space-y-2 overflow-y-scroll">
+      {moves.map(({ name, method }) => (
+        <div
+          key={name}
+          className="flex justify-between px-4 py-2 border-b border-gray-200 capitalize"
+        >
+          <div>{name.replace("-", " ")}</div>
+          <div className="italic text-gray-500">{method.replace("-", " ")}</div>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 export default PokemonDetails;

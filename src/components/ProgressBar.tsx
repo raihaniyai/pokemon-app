@@ -3,10 +3,11 @@ import React from 'react';
 interface Props {
   progress: number; // from 0 to 100
   showNumber?: boolean;
+  dynamicColor?: boolean;
 }
 
-const ProgressBar = ({ progress, showNumber }: Props) => {
-  const progressColor = progress < 50 ? 'bg-red-400' : 'bg-emerald-400';
+const ProgressBar = ({ progress, showNumber, dynamicColor }: Props) => {
+  const progressColor = progress >= 50 || dynamicColor ? 'bg-emerald-400' : 'bg-red-400';
 
   return (
     <div className='flex items-center space-x-6 h-full'>

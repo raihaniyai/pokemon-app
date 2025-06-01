@@ -37,7 +37,7 @@ const Tabs = ({ items, defaultActiveKey, activeKey }: Props) => {
         ))}
       </div>
 
-      <div>
+      <div className="overflow-y-auto max-h-[calc(100vh-500px)]">
         {items.map((item) =>
           item.key === selectedTab && item.children
         )}
