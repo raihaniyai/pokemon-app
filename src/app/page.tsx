@@ -5,6 +5,7 @@ import Image from "next/image";
 
 import PokemonCard from "@/components/PokemonCard";
 import toUpperCase from "@/utils/toUpperCase";
+import { Pokemon, PokemonType } from "@/types/pokemon";
 
 const Home = () => {
   const [pokemonList, setPokemonList] = useState<Pokemon[]>([]);
@@ -30,7 +31,7 @@ const Home = () => {
         name: toUpperCase(pokemonData.name),
         color: speciesData.color.name,
         image: pokemonData.sprites.other.dream_world.front_default || pokemonData.sprites.front_default,
-        types: pokemonData.types.map((t: any) => t.type.name),
+        types: pokemonData.types.map((t: PokemonType) => t.type.name),
       });
     }
 
@@ -51,7 +52,7 @@ const Home = () => {
     });
 
     if (node) observer.current.observe(node);
-  }, [offset]);
+  }, [offset, fetchPokemonBatch]);
 
   useEffect(() => {
     fetchPokemonBatch();
@@ -72,7 +73,7 @@ const Home = () => {
         <div className="w-full">
           <div className="mb-10 sm:text-4xl text-3xl font-bold">Pokedex</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 sm:gap-6 gap-4">
-            {pokemonList.map((pokemon, _) => (
+            {pokemonList.map((pokemon) => (
               <PokemonCard
                 key={pokemon.id}
                 id={pokemon.id}

@@ -7,6 +7,7 @@ import ProgressBar from "@/components/ProgressBar";
 import formatIdToThreeDigits from "@/utils/formatId";
 import toUpperCase from "@/utils/toUpperCase";
 import { convertDecimetersToFootFormat, convertDecimetersToMeters, convertHectogramsToKilograms, convertHectogramsToPounds } from "@/utils/unitConverter";
+import { EvolutionLink, Genera, ParsedEvolutionLink, PokemonAbility, PokemonMove, PokemonStat, PokemonType } from "@/types/pokemon";
 
 type Props = {
   params: Promise<{
@@ -31,7 +32,7 @@ const PokemonDetails = async ({ params }: Props) => {
   const speciesData = await speciesRes.json();
   const evolutionData = await evolutionRes.json();
 
-  const parseEvolutionChain = (chain: EvolutionLink): { url: string; name: string; evolvesTo: any[] } => ({
+  const parseEvolutionChain = (chain: EvolutionLink): ParsedEvolutionLink => ({
     url: chain.species.url,
     name: chain.species.name,
     evolvesTo: chain.evolves_to.map(parseEvolutionChain),
@@ -46,7 +47,7 @@ const PokemonDetails = async ({ params }: Props) => {
           <div>
             <div className="text-4xl font-bold mb-2">{toUpperCase(pokemonData.name)}</div>
             <div className="flex space-x-2 font-bold">
-              {pokemonData.types.map((t: any) => (
+              {pokemonData.types.map((t: PokemonType) => (
                 <div key={t.type.name} className="bg-gray-100/30 rounded-full px-4 py-1 mb-2 text-xs">{toUpperCase(t.type.name)}</div>
               ))}
             </div>
@@ -72,10 +73,10 @@ const PokemonDetails = async ({ params }: Props) => {
               label: "About",
               children: (
                 <About
-                  species={speciesData.genera.find((g: any) => g.language.name === "en")?.genus || ""}
+                  species={speciesData.genera.find((g: Genera) => g.language.name === "en")?.genus || ""}
                   height={pokemonData.height}
                   weight={pokemonData.weight}
-                  abilities={pokemonData.abilities.map((a: any) => toUpperCase(a.ability.name)).join(", ")}
+                  abilities={pokemonData.abilities.map((a: PokemonAbility) => toUpperCase(a.ability.name)).join(", ")}
                 />
               )
             },
@@ -95,7 +96,7 @@ const PokemonDetails = async ({ params }: Props) => {
               key: "Moves",
               label: "Moves",
               children: (
-                <Moves moves={pokemonData.moves.map((m: any) => ({
+                <Moves moves={pokemonData.moves.map((m: PokemonMove) => ({
                   name: m.move.name,
                   method: m.version_group_details[0]?.move_learn_method.name || "unknown",
                 }))} />
@@ -126,13 +127,8 @@ const About = ({ species, height, weight, abilities }: AboutProps) => {
   )
 }
 
-type Stat = {
-  base_stat: number;
-  stat: { name: string };
-};
-
 type BaseStatsProps = {
-  stats: Stat[];
+  stats: PokemonStat[];
 };
 
 const BaseStats = ({ stats }: BaseStatsProps) => {
@@ -166,11 +162,6 @@ const BaseStats = ({ stats }: BaseStatsProps) => {
       ))}
     </div>
   );
-};
-
-type EvolutionLink = {
-  species: { id: number; name: string; url: string };
-  evolves_to: EvolutionLink[];
 };
 
 type EvolutionProps = {
